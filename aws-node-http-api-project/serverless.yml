@@ -1,0 +1,96 @@
+service: aws-node-http-api-project
+frameworkVersion: "3"
+
+custom:
+  serverless-offline:
+    ignoreJWTSignature: true
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: eu-west-1
+  httpApi:
+    authorizers:
+      # customAuthorizer:
+      #   FunctionPayloadType: REQUEST
+      #   functionName: authorizerFunc
+      #   FunctionArn: !GetAtt authorizerFunc.Arn
+      #   Identity:
+      #     # Must specify at least one of
+      #     # Headers, QueryStrings, StageVariables, or Context
+      #     QueryStrings:
+      #       - auth
+      #     ReauthorizeEvery: 100
+      someJwtAuthorizer:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl: "https://dev-ycevu2qh.us.auth0.com/"
+        audience: "https://auth0-jwt-authorizer"
+
+functions:
+  create:
+    handler: handler.create
+    events:
+      - httpApi:
+          path: /notes
+          method: post
+          authorizer:
+            name: someJwtAuthorizer
+            # name: authorizer
+            type: request
+  # authorizer:
+  #   handler: handler.authorizerFunc
+
+  getAll:
+    handler: handler.getAll
+    events:
+      - httpApi:
+          path: /notes
+          method: get
+          authorizer:
+            name: someJwtAuthorizer
+            type: request
+  getOne:
+    handler: handler.getOne
+    events:
+      - httpApi:
+          path: /notes/{id}
+          method: get
+          # authorizer:
+          #   name: someJwtAuthorizer
+          #   type: request
+
+  getByDate:
+    handler: handler.getByDate
+    events:
+      - http:
+          path: data
+          method: post
+          cors: true
+  update:
+    handler: handler.update # path will be domain.name.com/dev/notes/1
+    events:
+      - http:
+          path: notes/{id}/todoId/{todoid}
+          method: put
+          cors: true
+  delete:
+    handler: handler.delete
+    events:
+      - http:
+          path: notes/{id}
+          method: delete
+          cors: true
+  deleteOne:
+    handler: handler.deleteOne
+    events:
+      - http:
+          path: notes/{id}/todoId/{todoid}
+          method: delete
+          cors: true
+
+  authorizerFunc:
+    handler: handler.authorizerFunc
+
+plugins:
+  - serverless-offline
